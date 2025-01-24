@@ -22,7 +22,7 @@ def describe_df(df):
         'DATA_TYPE': df.dtypes,
         'MISSINGS(%)': df.isnull().mean() * 100,
         'UNIQUE_VALUES': df.nunique(),
-        'CARDIN(%)': df.nunique() / len(df) * 100
+        'CARDIN(%)': round(df.nunique() / len(df) * 100,3)
     }
 
     # Creamos un nuevo DataFrame con la información recopilada, usamos 'transpose' para cambiar
