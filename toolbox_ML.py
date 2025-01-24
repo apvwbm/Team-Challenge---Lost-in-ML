@@ -115,7 +115,7 @@ def get_features_num_regression(df, target_col, umbral_corr, pvalue=None):
         for feature in features:
             # colocamos el guión bajo '_,' para indicar que no nos interesa el primer valor
             _, p_val = stats.pearsonr(df[feature], df[target_col])
-            if p_val < (1 - pvalue):
+            if p_val < pvalue:
                 significant_features.append(feature)
         features = significant_features
 
