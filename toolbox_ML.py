@@ -43,60 +43,61 @@ def describe_df(df):
     return estudiantes_df
 
 
-def tipifica_variable(df, umbral_categoria=10, umbral_continua=30.0):
+def tipifica_variable(df, umbral_categoria=10, umbral_continua=30.0, motrar_card=False):
     """
     Función para tipificar variables como binaria, categórica, numérica continua y numérica discreta.
-
+    
     Params:
-        df: DataFrame de pandas.
-        umbral_categoria: Valor entero que define el umbral de la cardinalidad para variables categóricas.
-        umbral_continua: Valor flotante que define el umbral de la cardinalidad para variables numéricas continuas.
-
+        df (pd.DataFrame): DataFrame de pandas.
+        umbral_categoria (int): Valor entero que define el umbral de la cardinalidad para variables categóricas.
+        umbral_continua (float): Valor flotante que define el umbral de la cardinalidad para variables numéricas continuas.
+        motrar_card (bool): Si es True, incluye la cardinalidad y el porcentaje de cardinalidad. False por defecto. 
+    
     Returns:
-        DataFrame con las columnas (variables) y la tipificación sugerida de cada una.
+        DataFrame con las columnas (variables), la tipificación sugerida de cada una.     
+        y el tipo real detectado por pandas. Si `motrar_card` es True, también incluye las columnas 
+        "CARD" (cardinalidad absoluta) y "%_CARD" (porcentaje de cardinalidad relativa).
     """
-
+    
     # Validación del DataFrame
     if not isinstance(df, pd.DataFrame):
-        raise ValueError(
-            "El argumento 'df' debe ser un DataFrame de pandas válido.")
-
+        raise ValueError("El argumento 'df' debe ser un DataFrame de pandas válido.")
+    
     # Validación de los umbrales
     if not isinstance(umbral_categoria, int) or umbral_categoria <= 0:
-        raise ValueError(
-            "El 'umbral_categoria' debe ser un número entero mayor que 0.")
-
+        raise ValueError("El 'umbral_categoria' debe ser un número entero mayor que 0.")
+    
     if not isinstance(umbral_continua, (float, int)) or umbral_continua <= 0:
-        raise ValueError(
-            "El 'umbral_continua' debe ser un número flotante mayor que 0.")
-
+        raise ValueError("El 'umbral_continua' debe ser un número float mayor que 0.")
+    
     # DataFrame inicial con cardinalidad y tipificación sugerida
     df_card = pd.DataFrame({
         "CARD": df.nunique(),
-        "%_CARD": df.nunique() / len(df) * 100,
-        "tipo_sugerido": ""
+        "%_CARD": round((df.nunique() / len(df) * 100),2),
+        "tipo_sugerido": "",
+        "tipo_real": df.dtypes.astype(str)
     })
-
+    
     # Tipo Binaria
     df_card.loc[df_card["CARD"] == 2, "tipo_sugerido"] = "Binaria"
-
+    
     # Tipo Categórica
-    df_card.loc[(df_card["CARD"] < umbral_categoria) & (
-        df_card["tipo_sugerido"] == ""), "tipo_sugerido"] = "Categórica"
-
+    df_card.loc[(df_card["CARD"] < umbral_categoria) & (df_card["tipo_sugerido"] == ""), "tipo_sugerido"] = "Categórica"
+    
     # Tipo Numérica Continua
-    df_card.loc[(df_card["CARD"] >= umbral_categoria) & (
-        df_card["%_CARD"] >= umbral_continua), "tipo_sugerido"] = "Numerica Continua"
-
+    df_card.loc[(df_card["CARD"] >= umbral_categoria) & (df_card["%_CARD"] >= umbral_continua), "tipo_sugerido"] = "Numerica Continua"
+    
     # Tipo Numérica Discreta
-    df_card.loc[(df_card["CARD"] >= umbral_categoria) & (
-        df_card["%_CARD"] < umbral_continua), "tipo_sugerido"] = "Numerica Discreta"
+    df_card.loc[(df_card["CARD"] >= umbral_categoria) & (df_card["%_CARD"] < umbral_continua), "tipo_sugerido"] = "Numerica Discreta"
 
     # Selección y renombrado de columnas
-    df_card = df_card.reset_index().rename(
-        columns={"index": "nombre_variable"})
+    df_card = df_card.reset_index().rename(columns={"index": "nombre_variable"})
+    
+    if motrar_card == False:
+        return df_card[["nombre_variable", "tipo_sugerido", "tipo_real"]]
+    else:
+        return df_card[["nombre_variable", "CARD", "%_CARD", "tipo_sugerido", "tipo_real"]]
 
-    return df_card[["nombre_variable", "tipo_sugerido"]]
 
 
 def get_features_num_regression(df, target_col, umbral_corr, pvalue=None):
