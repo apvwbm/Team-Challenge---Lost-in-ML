@@ -264,11 +264,11 @@ def plot_features_num_regression(df, target_col="", columns=[], umbral_corr=0, p
 
 def check_normality(data):
     stat, p = stats.shapiro(data)
-    return p > 0.05
+    return p > 0.01
 
 def check_homoscedasticity(*groups):
     stat, p = stats.levene(*groups)
-    return p > 0.05
+    return p > 0.01
 
 def get_features_cat_regression(df, target_col, pvalue=0.05):
     """
@@ -315,15 +315,21 @@ def get_features_cat_regression(df, target_col, pvalue=0.05):
                     is_homoscedastic = check_homoscedasticity(*groups)
 
                     if is_normal and is_homoscedastic:
+                        print(f"La distribución de {target_col} es normal y homocedástica.")
                         if len(groups) == 2:
                             t_stat, p_val = stats.ttest_ind(groups[0], groups[1])
+                            print(f"Student t (p_value): {p_val}")
                         else:
                             f_val, p_val = stats.f_oneway(*groups)
+                            print(f"Oneway ANOVA (p_value): {p_val}")
                     else:
+                        print(f"La distribución de {target_col} NO es normal o homocedástica.")
                         if len(groups) == 2:
                             u_stat, p_val = stats.mannwhitneyu(groups[0], groups[1])
+                            print(f"MannWhitney U (p_value): {p_val}")
                         else:
                             h_stat, p_val = stats.kruskal(*groups)
+                            print(f"Kruskal (p_value): {p_val}")
 
                     # Comprobamos si el p-valor es menor que el p-valor especificado
                     if p_val < pvalue:
@@ -335,7 +341,7 @@ def get_features_cat_regression(df, target_col, pvalue=0.05):
     if significant_cat_features:
         return significant_cat_features
     else:
-        print("No se encontraron características categóricas significativas.")
+        print("\nNo se encontraron características categóricas significativas.")
         return None
 
 def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, with_individual_plot=False):
@@ -389,15 +395,21 @@ def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, wit
                     is_homoscedastic = check_homoscedasticity(*groups)
 
                     if is_normal and is_homoscedastic:
+                        print(f"La distribución de {target_col} es normal y homocedástica.")
                         if len(groups) == 2:
                             t_stat, p_val = stats.ttest_ind(groups[0], groups[1])
+                            print(f"Student t (p_value): {p_val}")
                         else:
                             f_val, p_val = stats.f_oneway(*groups)
+                            print(f"Oneway ANOVA (p_value): {p_val}")
                     else:
+                        print(f"La distribución de {target_col} NO es normal o homocedástica.")
                         if len(groups) == 2:
                             u_stat, p_val = stats.mannwhitneyu(groups[0], groups[1])
+                            print(f"MannWhitney U (p_value): {p_val}")
                         else:
                             h_stat, p_val = stats.kruskal(*groups)
+                            print(f"Kruskal (p_value): {p_val}")
 
                     # Comprobamos si el p-valor es menor que el p-valor especificado
                     if p_val < pvalue:
@@ -407,7 +419,7 @@ def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, wit
                 continue
     # Si no hay columnas significativas
     if not significant_cat_features:
-        print("No se encontraron características categóricas significativas.")
+        print("\nNo se encontraron características categóricas significativas.")
         return None
     # Graficar histogramas agrupados para las columnas significativas
     for cat_col in significant_cat_features:
