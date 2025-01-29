@@ -262,67 +262,75 @@ def plot_features_num_regression(df, target_col="", columns=[], umbral_corr=0, p
     return selected_columns
 
 
+def check_normality(data):
+    stat, p = stats.shapiro(data)
+    return p > 0.05
+
+def check_homoscedasticity(*groups):
+    stat, p = stats.levene(*groups)
+    return p > 0.05
+
 def get_features_cat_regression(df, target_col, pvalue=0.05):
     """
     Función para obtener las características categóricas significativas en un modelo de regresión lineal.
-
     Params:
                 df: dataframe de pandas
                 target_col: columna objetivo del dataframe
                 pvalue: p-valor para el test de significancia
-
     Returns:
                 Lista con las características categóricas significativas
         """
-
     # Verificamos si el dataframe es válido
     if not isinstance(df, pd.DataFrame):
         print("El argumento 'df' no es un dataframe válido.")
         return None
-
-    if pvalue is not None and not (0 <= pvalue <= 1):
+    if not (0 <= pvalue <= 1):
         # comprueba que el valor de pvalue esté entre 0 y 1
         print("El valor de pvalue debe estar entre 0 y 1.")
         return None
-
     # Verificamos si 'target_col' es una columna válida en el dataframe
     if target_col not in df.columns:
         print(f"La columna '{target_col}' no está en el dataframe.")
         return None
-
     # Verificamos si la columna 'target_col' es numérica
     if not pd.api.types.is_numeric_dtype(df[target_col]):
         print(f"La columna '{target_col}' no es una columna numérica.")
         return None
-
     # Identificar las columnas categóricas del dataframe
-    cat_columns = df.select_dtypes(
-        include=['object', 'category']).columns.tolist()
-
+    cat_columns = df.select_dtypes(include=['object', 'category']).columns.tolist()
     if not cat_columns:
         print("No se encontraron características categóricas en el dataframe.")
         return None
-
     # Lista para almacenar las columnas categóricas que superan el pvalor
     significant_cat_features = []
-
     for cat_col in cat_columns:
         # Si la columna categórica tiene más de un nivel (para que sea válida para el test)
         if df[cat_col].nunique() > 1:
-            # Si la columna categórica tiene dos niveles, realizar test t de Student
-            if df[cat_col].nunique() == 2:
-                group1 = df[target_col][df[cat_col] == df[cat_col].unique()[0]]
-                group2 = df[target_col][df[cat_col] == df[cat_col].unique()[1]]
-                t_stat, p_val = stats.ttest_ind(group1, group2)
-            else:
-                # Realizar test ANOVA si hay más de dos niveles
-                f_val, p_val = stats.f_oneway(
-                    *[df[target_col][df[cat_col] == level] for level in df[cat_col].unique()])
+            try:
+                groups = [df[target_col][df[cat_col] == level].dropna() for level in df[cat_col].unique()]
+                if all(len(g) >= 2 for g in groups):
+                    # Comprobamos normalidad y homocedasticidad
+                    all_data = np.concatenate(groups)
+                    is_normal = check_normality(all_data)
+                    is_homoscedastic = check_homoscedasticity(*groups)
 
-            # Comprobamos si el p-valor es menor que el p-valor especificado
-            if p_val < pvalue:
-                significant_cat_features.append(cat_col)
+                    if is_normal and is_homoscedastic:
+                        if len(groups) == 2:
+                            t_stat, p_val = stats.ttest_ind(groups[0], groups[1])
+                        else:
+                            f_val, p_val = stats.f_oneway(*groups)
+                    else:
+                        if len(groups) == 2:
+                            u_stat, p_val = stats.mannwhitneyu(groups[0], groups[1])
+                        else:
+                            h_stat, p_val = stats.kruskal(*groups)
 
+                    # Comprobamos si el p-valor es menor que el p-valor especificado
+                    if p_val < pvalue:
+                        significant_cat_features.append(cat_col)
+            except Exception as e:
+                print(f"Error al procesar la columna {cat_col}: {str(e)}")
+                continue
     # Si encontramos columnas significativas, las devolvemos
     if significant_cat_features:
         return significant_cat_features
@@ -330,81 +338,77 @@ def get_features_cat_regression(df, target_col, pvalue=0.05):
         print("No se encontraron características categóricas significativas.")
         return None
 
-
 def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, with_individual_plot=False):
     """
     Función para graficar histogramas agrupados de variables categóricas significativas.
-
     Params:
         df: dataframe de pandas
         target_col: columna objetivo del dataframe (variable numérica)
         columns: lista de columnas categóricas a evaluar (si está vacía, se usan todas las columnas categóricas)
         pvalue: p-valor para el test de significancia
         with_individual_plot: si es True, genera un gráfico individual por cada categoría
-
     Returns:
         Lista de columnas que cumplen con los criterios de significancia
     """
-
     # Verificamos si el dataframe es válido
     if not isinstance(df, pd.DataFrame):
         print("El argumento 'df' no es un dataframe válido.")
         return None
-
-    # Verificamos si 'target_col' es una columna válida en el dataframe
     if target_col and target_col not in df.columns:
         print(f"La columna '{target_col}' no está en el dataframe.")
         return None
-
-    if pvalue is not None and not (0 <= pvalue <= 1):
+    if not (0 <= pvalue <= 1):
         # comprueba que el valor de pvalue esté entre 0 y 1
         print("El valor de pvalue debe estar entre 0 y 1.")
         return None
-
-    # Verificamos si la columna 'target_col' es numérica
     if target_col and not pd.api.types.is_numeric_dtype(df[target_col]):
         print(f"La columna '{target_col}' no es una columna numérica.")
         return None
-
     # Identificar las columnas categóricas del dataframe
-    cat_columns = df.select_dtypes(
-        include=['object', 'category']).columns.tolist()
-
+    cat_columns = df.select_dtypes(include=['object', 'category']).columns.tolist()
     if not cat_columns:
         print("No se encontraron características categóricas en el dataframe.")
         return None
-
     # Si 'columns' está vacío, usamos todas las columnas categóricas
     if not columns:
         columns = cat_columns
-
     # Lista para almacenar las columnas significativas
     significant_cat_features = []
-
     # Verificamos la significancia de las columnas categóricas con respecto al 'target_col'
     for cat_col in columns:
         if cat_col not in cat_columns:
             print(f"La columna '{cat_col}' no es categórica o no existe en el dataframe.")
             continue
-
         if df[cat_col].nunique() > 1:
-            if df[cat_col].nunique() == 2:
-                group1 = df[target_col][df[cat_col] == df[cat_col].unique()[0]]
-                group2 = df[target_col][df[cat_col] == df[cat_col].unique()[1]]
-                t_stat, p_val = stats.ttest_ind(group1, group2)
-            else:
-                f_val, p_val = stats.f_oneway(
-                    *[df[target_col][df[cat_col] == level] for level in df[cat_col].unique()])
+            try:
+                groups = [df[target_col][df[cat_col] == level].dropna() for level in df[cat_col].unique()]
+                if all(len(g) >= 2 for g in groups):
+                    # Comprobamos normalidad y homocedasticidad
+                    all_data = np.concatenate(groups)
+                    is_normal = check_normality(all_data)
+                    is_homoscedastic = check_homoscedasticity(*groups)
 
-            # Comprobamos si el p-valor es menor que el p-valor especificado
-            if p_val < pvalue:
-                significant_cat_features.append(cat_col)
+                    if is_normal and is_homoscedastic:
+                        if len(groups) == 2:
+                            t_stat, p_val = stats.ttest_ind(groups[0], groups[1])
+                        else:
+                            f_val, p_val = stats.f_oneway(*groups)
+                    else:
+                        if len(groups) == 2:
+                            u_stat, p_val = stats.mannwhitneyu(groups[0], groups[1])
+                        else:
+                            h_stat, p_val = stats.kruskal(*groups)
 
+                    # Comprobamos si el p-valor es menor que el p-valor especificado
+                    if p_val < pvalue:
+                        significant_cat_features.append(cat_col)
+            except Exception as e:
+                print(f"Error al procesar la columna {cat_col}: {str(e)}")
+                continue
     # Si no hay columnas significativas
     if not significant_cat_features:
         print("No se encontraron características categóricas significativas.")
         return None
-
     # Graficar histogramas agrupados para las columnas significativas
     for cat_col in significant_cat_features:
         plt.figure(figsize=(10, 6))
@@ -414,7 +418,6 @@ def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, wit
         plt.xlabel(target_col)
         plt.ylabel("Frecuencia")
         plt.show()
-
         # Si 'with_individual_plot' es True, graficar histogramas individuales por cada categoría
         if with_individual_plot:
             for level in df[cat_col].unique():
@@ -425,5 +428,4 @@ def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, wit
                 plt.xlabel(target_col)
                 plt.ylabel("Frecuencia")
                 plt.show()
-
     return significant_cat_features
