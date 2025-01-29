@@ -28,6 +28,10 @@ def describe_df(df):
     Returns:
         DataFrame con la información recopilada sobre el DataFrame de entrada.
     """
+
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("El argumento 'df' debe ser un DataFrame de pandas válido.")
+
     # Creamons un diccionario para almacenar la información
     data = {
         'DATA_TYPE': df.dtypes,
@@ -182,13 +186,11 @@ def plot_features_num_regression(df, target_col="", columns=[], umbral_corr=0, p
 
     # Verificamos si 'target_col' es una columna válida en el dataframe
     if target_col and target_col not in df.columns:
-        raise ValueError(f"La columna indicada como 'target_col': {
-                         target_col} no está en el DataFrame.")
+        raise ValueError(f"La columna indicada como 'target_col': {target_col} no está en el DataFrame.")
 
     # Verificamos si la columna 'target_col' es numérica
     if target_col and not pd.api.types.is_numeric_dtype(df[target_col]):
-        raise ValueError(f"La columna indicada como 'target_col': {
-                         target_col} no es numérica.")
+        raise ValueError(f"La columna indicada como 'target_col': {target_col} no es numérica.")
 
     # Si 'columns' está vacío, usamos todas las columnas numéricas excepto 'target_col'
     if not columns:
@@ -206,8 +208,7 @@ def plot_features_num_regression(df, target_col="", columns=[], umbral_corr=0, p
         non_numeric_cols = [
             col for col in columns if not pd.api.types.is_numeric_dtype(df[col])]
         if non_numeric_cols:
-            raise ValueError(f"Las siguientes columnas no son numéricas: {
-                             non_numeric_cols}")
+            raise ValueError(f"Las siguientes columnas no son numéricas: {non_numeric_cols}")
 
     # Validación del umbral de correlacion 'umbral_corr'
     if not isinstance(umbral_corr, (int, float)) or not 0 <= umbral_corr <= 1:
@@ -277,6 +278,11 @@ def get_features_cat_regression(df, target_col, pvalue=0.05):
     # Verificamos si el dataframe es válido
     if not isinstance(df, pd.DataFrame):
         print("El argumento 'df' no es un dataframe válido.")
+        return None
+
+    if pvalue is not None and not (0 <= pvalue <= 1):
+        # comprueba que el valor de pvalue esté entre 0 y 1
+        print("El valor de pvalue debe estar entre 0 y 1.")
         return None
 
     # Verificamos si 'target_col' es una columna válida en el dataframe
@@ -350,6 +356,11 @@ def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, wit
         print(f"La columna '{target_col}' no está en el dataframe.")
         return None
 
+    if pvalue is not None and not (0 <= pvalue <= 1):
+        # comprueba que el valor de pvalue esté entre 0 y 1
+        print("El valor de pvalue debe estar entre 0 y 1.")
+        return None
+
     # Verificamos si la columna 'target_col' es numérica
     if target_col and not pd.api.types.is_numeric_dtype(df[target_col]):
         print(f"La columna '{target_col}' no es una columna numérica.")
@@ -373,8 +384,7 @@ def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, wit
     # Verificamos la significancia de las columnas categóricas con respecto al 'target_col'
     for cat_col in columns:
         if cat_col not in cat_columns:
-            print(f"La columna '{
-                  cat_col}' no es categórica o no existe en el dataframe.")
+            print(f"La columna '{cat_col}' no es categórica o no existe en el dataframe.")
             continue
 
         if df[cat_col].nunique() > 1:
@@ -411,8 +421,7 @@ def plot_features_cat_regression(df, target_col="", columns=[], pvalue=0.05, wit
                 plt.figure(figsize=(10, 6))
                 sns.histplot(df[df[cat_col] == level],
                              x=target_col, kde=True, bins=30)
-                plt.title(f"Distribución de {target_col} para {
-                          cat_col} = {level}")
+                plt.title(f"Distribución de {target_col} para {cat_col} = {level}")
                 plt.xlabel(target_col)
                 plt.ylabel("Frecuencia")
                 plt.show()
