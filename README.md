@@ -12,9 +12,11 @@ En esta primera parte del proyecto, se desarrollará un módulo en Python que in
 - **Team_Challenge_ToolBox_I.ipynb**: Notebook con un ejemplo práctico que usa las funciones implementadas en `toolbox_ML.py` para desarrollar y probar un modelo de Machine Learning.
 - **data/student_performance_data.csv**: Dataset utilizado para el ejemplo de Machine Learning.
 - **functions/**: Carpeta que contiene notebooks con diferentes funciones y visualizaciones útiles:
-  - **DESCRIBE_DF.ipynb**: Análisis descriptivo del DataFrame.
+  - **describe_df.ipynb**: Análisis descriptivo del DataFrame.
+  - **tipifica_variables.ipynb**: Función para tipificar variables.
+  - **get_features_num_regression.ipynb**: Extracción de características numéricas para regresión.
+  - **plot_features_num_regression.ipynb**: Visualización de características numéricas para regresión.
   - **get_features_cat_regression.ipynb**: Extracción de características categóricas para regresión.
-  - **GET_FEATURES_NUM_REGRESSION.ipynb**: Extracción de características numéricas para regresión.
   - **plot_features_cat_regression.ipynb**: Visualización de características categóricas para regresión.
 
 ## Requisitos
